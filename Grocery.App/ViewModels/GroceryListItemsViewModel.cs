@@ -41,8 +41,10 @@ namespace Grocery.App.ViewModels
 
             AvailableProducts.Clear();
 
-            AvailableProducts = new ObservableCollection<Product>(_productService.GetAll()
-                .Where(x => x.Stock > 0));
+            foreach (var item in _productService.GetAll().Where(x => x.Stock > 0))
+            {
+                AvailableProducts.Add(item);
+            }
 
             foreach (var item in MyGroceryListItems)
             {
@@ -51,7 +53,7 @@ namespace Grocery.App.ViewModels
                     AvailableProducts.Remove(item.Product);
                 }
             }
-
+            
         }
 
         partial void OnGroceryListChanged(GroceryList value)
@@ -68,6 +70,10 @@ namespace Grocery.App.ViewModels
         [RelayCommand]
         public void AddProduct(Product product)
         {
+            if (product == null)
+            {
+                return;
+            }
             //Controleer of het product bestaat en dat de Id > 0
             //Maak een GroceryListItem met Id 0 en vul de juiste productid en grocerylistid
             //Voeg het GroceryListItem toe aan de dataset middels de _groceryListItemsService
@@ -91,9 +97,10 @@ namespace Grocery.App.ViewModels
             {
                 AvailableProducts.Remove(product);
             }
-            if (product.Stock > 0 && AvailableProducts.Where(x => x.Id == product.Id).First() != null)
+            // if the product doesnt exist, add it back
+            if (product.Stock > 0 && AvailableProducts.Where(x => x.Id == product.Id).First() == null)
             {
-                AvailableProducts.Add(product);
+                //AvailableProducts.Add(product);
             }
             OnGroceryListChanged(GroceryList);
 
