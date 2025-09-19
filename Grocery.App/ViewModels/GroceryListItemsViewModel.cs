@@ -37,7 +37,23 @@ namespace Grocery.App.ViewModels
             //Maak de lijst AvailableProducts leeg
             //Haal de lijst met producten op
             //Controleer of het product al op de boodschappenlijst staat, zo niet zet het in de AvailableProducts lijst
-            //Houdt rekening met de voorraad (als die nul is kun je het niet meer aanbieden).            
+            //Houdt rekening met de voorraad (als die nul is kun je het niet meer aanbieden).
+
+            AvailableProducts.Clear();
+
+            foreach (var item in _productService.GetAll().Where(x => x.Stock > 0))
+            {
+                AvailableProducts.Add(item);
+            }
+
+            foreach (var item in MyGroceryListItems)
+            {
+                if (AvailableProducts.Contains(item.Product))
+                {
+                    AvailableProducts.Remove(item.Product);
+                }
+            }
+            
         }
 
         partial void OnGroceryListChanged(GroceryList value)
@@ -54,12 +70,55 @@ namespace Grocery.App.ViewModels
         [RelayCommand]
         public void AddProduct(Product product)
         {
+            if (product == null)
+            {
+                return;
+            }
             //Controleer of het product bestaat en dat de Id > 0
             //Maak een GroceryListItem met Id 0 en vul de juiste productid en grocerylistid
             //Voeg het GroceryListItem toe aan de dataset middels de _groceryListItemsService
             //Werk de voorraad (Stock) van het product bij en zorg dat deze wordt vastgelegd (middels _productService)
             //Werk de lijst AvailableProducts bij, want dit product is niet meer beschikbaar
             //call OnGroceryListChanged(GroceryList);
+
+            if (product.Id <= 0)
+            {
+                return;
+            }
+
+            GroceryListItem newGrocery = new GroceryListItem(0, GetAvaibleId(), product.Id, product.Stock);
+
+            _groceryListItemsService.Add(newGrocery);
+
+            product.Stock--;
+            _productService.Update(product);
+
+            if (product.Stock <= 0)
+            {
+                AvailableProducts.Remove(product);
+            }
+            // if the product doesnt exist, add it back
+            if (product.Stock > 0 && AvailableProducts.Where(x => x.Id == product.Id).First() == null)
+            {
+                //AvailableProducts.Add(product);
+            }
+            OnGroceryListChanged(GroceryList);
+
         }
+
+        private int GetAvaibleId()
+        {
+            int highestId = 0;
+            foreach(var item in MyGroceryListItems)
+            {
+                if (item.GroceryListId > highestId)
+                {
+                    highestId = item.GroceryListId;
+                }
+            }
+            return highestId + 1;
+        }
+
+        
     }
 }
